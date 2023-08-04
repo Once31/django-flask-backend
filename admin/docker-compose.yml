@@ -1,0 +1,34 @@
+version: '3.8' # version of docker-compose to be used 
+services: #defines different services that are in your application like in this application there are three services flask microservice backend with database mysql and rabbitmq as a communicator. to communicate with django admin panel
+  backend:
+    build: 
+      context: .  #this specifies that the service which will be built is in same folder as were docker-compose file is
+      dockerfile: Dockerfile # it specifies which dockerfile should be used to create image
+    command: 'python manage.py runserver 0.0.0.0:8000' #this sets the command that should be run when 'backend' container starts
+    ports: #maps port of host system to port on the backend container, it allows us to access service that is running in docker container on our system
+      - 8000:8000
+    volumes: #this mounts the current directory to /app directory inside container. if any changes done in code on host will be automatically reflect inside container
+      - .:/app
+    depends_on: #this indicate that this service is depends upon db service. this will ensure that db service will start first then backend service
+      - db
+
+  queue:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    command: 'python consumer.py'
+    depends_on:
+      - db
+    
+  db:
+    image: mysql:5.7.22 #this specifies that db service will use official mysql image from docker hub
+    restart: always #this ensures that db container will be restart automatically if it stops
+    environment:
+      MYSQL_DATABASE: admin
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - .dbdata:/var/lib/mysql
+    ports:
+      - 33066:3306
